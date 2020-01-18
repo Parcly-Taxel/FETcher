@@ -4,9 +4,12 @@ import shutil
 import tempfile
 import pygit2
 
-# change these to your own name and e-mail in actual use
+# Change these to your own in actual use.
+# If using 2FA, PASSWORD must be a personal access token
 AUTHOR_NAME = "Derpy Hooves"
 AUTHOR_EMAIL = "derpy@equestria.net"
+USERNAME = "muffinsmuffins"
+PASSWORD = "ijustd0ntknowwatwentwr0ng"
 
 def clone_files(dst, uname):
     """Clone a student's PE repository into dst and return the path to
@@ -49,9 +52,6 @@ def collate_files(unames, dst):
     N = len(unames)
     with tempfile.TemporaryDirectory() as portdir:
         for (n, uname) in enumerate(unames, 1):
-            # XXX remove when completed!
-            if n > 2:
-                break
             print(f"{n}/{N} {uname}")
             files_path = clone_files(portdir, uname)
             if files_path is None:
@@ -60,9 +60,10 @@ def collate_files(unames, dst):
     return [user_fn(p) for p in dupes]
 
 def main():
-    """Get CSV file of students' names and destination repository
-    from the command line, then transfer the files. Includes commit
-    and push."""
+    """Get the CSV file of students' names and the destination
+    repository from the command line, then transfer the files.
+    Afterwards, commit and push using author data at the top
+    of this module file."""
     if len(sys.argv) != 3:
         print(f"Usage: {sys.argv[0]} students.csv uname/repo")
         print(f"Example: {sys.argv[0]} fetcher/data.csv nus-cs2103-AY1920S1/pe")
@@ -74,8 +75,10 @@ def main():
     uname, rname = dest_repo.split("/")
     if os.path.exists(rname):
         shutil.rmtree(rname)
-    git_path = f"git://github.com/{dest_repo}.git"
-    dest_repo = pygit2.clone_repository(git_path, rname)
+    git_path = f"https://github.com/{dest_repo}.git"
+    creds = pygit2.UserPass(USERNAME, PASSWORD)
+    callbacks = pygit2.RemoteCallbacks(credentials=creds)
+    dest_repo = pygit2.clone_repository(git_path, rname, callbacks=callbacks)
 
     dest_path = f"{rname}/files"
     os.mkdir(dest_path)
@@ -87,10 +90,15 @@ def main():
     tree = dest_repo.index.write_tree()
     dest_repo.create_commit("HEAD", sig, sig, "Collect PE files",
             tree, [dest_repo.head.target])
-    # TODO push to GitHub
-    print("Files not transferred:")
-    for dupe in dupes:
-        print(dupe)
+    # Push to GitHub
+    remote = dest_repo.remotes["origin"]
+    remote.credentials = creds
+    remote.push(["refs/heads/master"], callbacks=callbacks)
+
+    if dupes:
+        print("Files not transferred:")
+        for dupe in dupes:
+            print(dupe)
 
 if __name__ == "__main__":
     main()
