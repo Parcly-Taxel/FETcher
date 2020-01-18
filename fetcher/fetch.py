@@ -4,6 +4,10 @@ import shutil
 import tempfile
 import pygit2
 
+# change these to your own name and e-mail in actual use
+AUTHOR_NAME = "Derpy Hooves"
+AUTHOR_EMAIL = "derpy@equestria.net"
+
 def clone_files(dst, uname):
     """Clone a student's PE repository into dst and return the path to
     its files directory, or None if said directory does not exist.
@@ -26,11 +30,16 @@ def transfer_files(src, dst):
     for fn in os.listdir(src):
         fn_full = os.path.join(src, fn)
         if fn in files_in_dst:
-            dupes += fn_full
-            print(fn_full)
+            dupes.append(fn_full)
         else:
             shutil.copy(fn_full, dst)
     return dupes
+
+def user_fn(path):
+    """Extracts the user and file name from the full paths returned
+    from transfer_files()."""
+    segs = os.path.normpath(path).split(os.sep)
+    return segs[-3] + "/" + segs[-1]
 
 def collate_files(unames, dst):
     """Given a sequence of GitHub usernames, clone the corresponding
@@ -41,21 +50,22 @@ def collate_files(unames, dst):
     with tempfile.TemporaryDirectory() as portdir:
         for (n, uname) in enumerate(unames, 1):
             # XXX remove when completed!
-            if n > 10:
+            if n > 2:
                 break
             print(f"{n}/{N} {uname}")
             files_path = clone_files(portdir, uname)
             if files_path is None:
                 continue
             dupes += transfer_files(files_path, dst)
-    return dupes
+    return [user_fn(p) for p in dupes]
 
 def main():
     """Get CSV file of students' names and destination repository
-    from the command line, then transfer the files."""
+    from the command line, then transfer the files. Includes commit
+    and push."""
     if len(sys.argv) != 3:
         print(f"Usage: {sys.argv[0]} students.csv uname/repo")
-        print(f"Example: {sys.argv[0]} fetcher/data.csv kennethreitz/samplemod")
+        print(f"Example: {sys.argv[0]} fetcher/data.csv nus-cs2103-AY1920S1/pe")
         sys.exit(1)
     __, csv_file, dest_repo = sys.argv
     with open(csv_file, 'r') as f:
@@ -68,11 +78,19 @@ def main():
     dest_repo = pygit2.clone_repository(git_path, rname)
 
     dest_path = f"{rname}/files"
-    # os.mkdir(dest_path)
+    os.mkdir(dest_path)
     dupes = collate_files(students, dest_path)
-    # At this point the files have been transferred.
-    # TODO commit and push
-    return dupes
+    # At this point the files have been transferred, so commit them
+    dest_repo.index.add_all()
+    dest_repo.index.write()
+    sig = pygit2.Signature(AUTHOR_NAME, AUTHOR_EMAIL)
+    tree = dest_repo.index.write_tree()
+    dest_repo.create_commit("HEAD", sig, sig, "Collect PE files",
+            tree, [dest_repo.head.target])
+    # TODO push to GitHub
+    print("Files not transferred:")
+    for dupe in dupes:
+        print(dupe)
 
 if __name__ == "__main__":
     main()
