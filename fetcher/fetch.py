@@ -12,7 +12,7 @@ USERNAME = "muffinsmuffins"
 PASSWORD = "ijustd0ntknowwatwentwr0ng"
 
 def clone_destination(owner_name, key):
-    """Clone the destination repository given by owner_name.
+    """Clone the destination repository given by owner/name.
     key is a RemoteCallbacks object for authentication to GitHub.
     Return a Repository object."""
     name = owner_name.partition("/")[2]
@@ -22,10 +22,10 @@ def clone_destination(owner_name, key):
     return pygit2.clone_repository(git_path, name, callbacks=key)
 
 def make_files_folder(repository):
-    """Make a folder called files in the given Repository object.
-    Return a path to that folder."""
+    """Return a path to a folder called files in the given
+    Repository object, making it if needed."""
     files_path = os.path.join(repository.workdir, "files")
-    os.mkdir(files_path)
+    os.makedirs(files_path, exist_ok=True)
     return files_path
 
 def clone_files(name, parent):
@@ -75,21 +75,32 @@ def collate_files(names, endpoint):
             clashes += transfer_files(name_path, endpoint)
     return [get_user_and_filename(p) for p in clashes]
 
-def commit_repository(repository, author, email, message):
+def commit_and_push(repository, author, email, message, key):
     """Commit the current working state of repository using the given
-    author information and message."""
+    author information and message. Then push changes to the remote
+    using key (a RemoteCallbacks object) for authentication."""
     repository.index.add_all()
     repository.index.write()
     signature = pygit2.Signature(author, email)
     tree = repository.index.write_tree()
     repository.create_commit("HEAD", signature, signature, message,
             tree, [repository.head.target])
-
-def push_repository(repository, key):
-    """Push the repository's contents to GitHub with the given key
-    (RemoteCallbacks object)."""
     remote = repository.remotes["origin"]
     remote.push(["refs/heads/master"], callbacks=key)
+
+def read_csv(file):
+    """Read a CSV file containing usernames. Each username should reside
+    in the second column, where the first column contains "student".
+    Return a list of students thus extracted."""
+    with open(file, 'r') as f:
+        return [row[1] for row in csv.reader(f) if row[0] == "student"]
+
+def print_clashes(clashes):
+    """Print any clashing filenames that arose out of file transfer."""
+    if clashes:
+        print("Files not transferred:")
+        for clash in clashes:
+            print(clash)
 
 def main():
     """Get the CSV file of students' names and the destination
@@ -101,21 +112,13 @@ def main():
         print(f"Example: {sys.argv[0]} fetcher/data.csv nus-cs2103-AY1920S1/pe")
         sys.exit(1)
     __, csv_file, owner_name = sys.argv
-
-    with open(csv_file, 'r') as f:
-        students = [row[1] for row in csv.reader(f) if row[0] == "student"]
+    students = read_csv(csv_file)
     user_pass = pygit2.UserPass(USERNAME, PASSWORD)
     key = pygit2.RemoteCallbacks(credentials=user_pass)
     endpoint = clone_destination(owner_name, key)
     files_path = make_files_folder(endpoint)
-    clashes = collate_files(students, files_path)
-    commit_repository(endpoint, AUTHOR, EMAIL, "Collect PE files")
-    push_repository(endpoint, key)
-
-    if clashes:
-        print("Files not transferred:")
-        for clash in clashes:
-            print(clash)
+    print_clashes(collate_files(students, files_path))
+    commit_and_push(endpoint, AUTHOR, EMAIL, "Collect PE files", key)
 
 if __name__ == "__main__":
     main()
