@@ -5,7 +5,7 @@
 This repository contains a script, `fetch.py`, performing **F**il**E T**ransfer for the purposes of [CATcher](https://github.com/CATcher-org/CATcher). It takes from the command line
 
 * the location of a CSV file containing student usernames (see `fetcher/data.csv` for how it should be structured)
-* a destination repository in the form `username/reponame`
+* a destination repository in the form `owner/name`
 
 At the script's beginning, strings must also be set for the name and email address associated with the commit and the username and password that will be used for pushing. The script then clones the students' repositories, transfers them to a central folder in the destination repository called `files`, commits and pushes.
 
