@@ -1,7 +1,10 @@
 #!/usr/bin/env python3.7
-import os, sys, csv
+import os
+import csv
 import shutil
 import tempfile
+import argparse
+
 import pygit2
 
 # Change these to your own in actual use.
@@ -117,15 +120,17 @@ def main():
     repository from the command line, then transfer the files.
     Afterwards, commit and push using author data at the top
     of this module file."""
-    if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} [students.csv|userlist] owner/name")
-        print(f"Example: {sys.argv[0]} fetcher/data.csv nus-cs2103-AY1920S1/pe")
-        sys.exit(1)
-    __, file, owner_name = sys.argv
-    students = read_student_names(file)
+    parser = argparse.ArgumentParser(description="Read a file of "
+            "student GitHub usernames, then transfer files in their "
+            "PE repositories to a given destination repository.")
+    parser.add_argument("students", help="CSV or plaintext list of students")
+    parser.add_argument("destination", help="destination repository, "
+            "in the form owner/name (e.g. nus-cs2103-AY1920S1/pe)")
+    args = parser.parse_args()
+    students = read_student_names(args.students)
     user_pass = pygit2.UserPass(USERNAME, PASSWORD)
     key = pygit2.RemoteCallbacks(credentials=user_pass)
-    endpoint = clone_destination(owner_name, key)
+    endpoint = clone_destination(args.destination, key)
     files_path = make_files_folder(endpoint)
     print_clashes(collate_files(students, files_path))
     commit_and_push(endpoint, AUTHOR, EMAIL, "Collect PE files", key)
