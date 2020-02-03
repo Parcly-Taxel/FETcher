@@ -12,12 +12,12 @@ USERNAME = "muffinsmuffins"
 PASSWORD = "ijustd0ntknowwatwentwr0ng"
 
 def clone_destination(owner_name, key):
-    """Clone the destination repository given by owner/name.
-    key is a RemoteCallbacks object for authentication to GitHub.
-    Return a Repository object."""
+    """If the destination repository given by owner/name does not exist,
+    clone it. key is a RemoteCallbacks object for authentication to GitHub.
+    Return a Repository object in any case."""
     name = owner_name.partition("/")[2]
     if os.path.exists(name):
-        shutil.rmtree(name)
+        return pygit2.Repository(name)
     git_path = f"https://github.com/{owner_name}.git"
     return pygit2.clone_repository(git_path, name, callbacks=key)
 
@@ -36,7 +36,7 @@ def clone_files(name, parent):
         git_path = f"git://github.com/{name}/pe.git"
         repo_path = os.path.join(parent, name)
         pygit2.clone_repository(git_path, repo_path)
-    except pygit2.GitError: # repository not found
+    except pygit2.GitError:
         return None
     files_path = os.path.join(repo_path, "files")
     return files_path if os.path.isdir(files_path) else None
@@ -60,6 +60,12 @@ def get_user_and_filename(path):
     segments = os.path.normpath(path).split(os.sep)
     return segments[-3] + "/" + segments[-1]
 
+def dump_remaining_usernames(names):
+    """Dump names yet to be processed into a backup file."""
+    with open("remaining", 'w') as f:
+        for name in names:
+            print(name, file=f)
+
 def collate_files(names, endpoint):
     """Given a sequence of GitHub usernames of students, clone their
     PE repositories and copy files into endpoint. Return a list of
@@ -70,6 +76,7 @@ def collate_files(names, endpoint):
         for (n, name) in enumerate(names, 1):
             print(f"{n}/{N} {name}")
             name_path = clone_files(name, tempdir)
+            dump_remaining_usernames(names[n:])
             if name_path is None:
                 continue
             clashes += transfer_files(name_path, endpoint)
@@ -88,11 +95,14 @@ def commit_and_push(repository, author, email, message, key):
     remote = repository.remotes["origin"]
     remote.push(["refs/heads/master"], callbacks=key)
 
-def read_csv(file):
-    """Read a CSV file containing usernames. Each username should reside
-    in the second column, where the first column contains "student".
+def read_student_names(file):
+    """If file ends in .csv, read the CSV file where each username should
+    reside in the second column and the first column contains "student".
+    If not, the file should contain several lines, one username per line.
     Return a list of students thus extracted."""
     with open(file, 'r') as f:
+        if not file.endswith(".csv"):
+            return f.read().splitlines()
         return [row[1] for row in csv.reader(f) if row[0] == "student"]
 
 def print_clashes(clashes):
@@ -108,11 +118,11 @@ def main():
     Afterwards, commit and push using author data at the top
     of this module file."""
     if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} students.csv owner/name")
+        print(f"Usage: {sys.argv[0]} [students.csv|userlist] owner/name")
         print(f"Example: {sys.argv[0]} fetcher/data.csv nus-cs2103-AY1920S1/pe")
         sys.exit(1)
-    __, csv_file, owner_name = sys.argv
-    students = read_csv(csv_file)
+    __, file, owner_name = sys.argv
+    students = read_student_names(file)
     user_pass = pygit2.UserPass(USERNAME, PASSWORD)
     key = pygit2.RemoteCallbacks(credentials=user_pass)
     endpoint = clone_destination(owner_name, key)

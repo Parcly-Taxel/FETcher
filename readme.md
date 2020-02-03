@@ -4,10 +4,12 @@
 
 This repository contains a script, `fetch.py`, performing **F**il**E T**ransfer for the purposes of [CATcher](https://github.com/CATcher-org/CATcher). It takes from the command line
 
-* the location of a CSV file containing student usernames (see `fetcher/data.csv` for how it should be structured)
+* either the location of a CSV file containing student usernames (see `fetcher/data.csv` for how it should be structured), or a regular file containing one username per line to transfer
 * a destination repository in the form `owner/name`
 
-At the script's beginning, strings must also be set for the name and email address associated with the commit and the username and password that will be used for pushing. The script then clones the students' repositories, transfers them to a central folder in the destination repository called `files`, commits and pushes.
+At the script's beginning, strings must also be set for the name and email address associated with the commit and the username and password that will be used for pushing. The script then clones the students' repositories, transfers their files to a central folder in the destination repository called `files`, commits and pushes.
+
+An interrupted transfer process can be resumed by passing `remaining` instead of the CSV file as the first argument to `fetch.py`. The file `remaining` is automatically updated with a list of usernames still to process.
 
 Example times for transferring the CS2103/T AY1920S1 cohort (332 students):
 ```
