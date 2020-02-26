@@ -7,13 +7,6 @@ import argparse
 
 import pygit2
 
-# Change these to your own in actual use.
-# If using 2FA, PASSWORD must be a personal access token
-AUTHOR = "Derpy Hooves"
-EMAIL = "derpy@equestria.net"
-USERNAME = "muffinsmuffins"
-PASSWORD = "ijustd0ntknowwatwentwr0ng"
-
 def clone_destination(owner_name, key):
     """If the destination repository given by owner/name does not exist,
     clone it. key is a RemoteCallbacks object for authentication to GitHub.
@@ -108,6 +101,13 @@ def read_student_names(file):
             return f.read().splitlines()
         return [row[1] for row in csv.reader(f) if row[0] == "student"]
 
+def read_credentials(file):
+    """file contains four lines: author name, email address,
+    GitHub username, password or access token. Extract these fields
+    from said file and return a tuple of them."""
+    with open(file, 'r') as f:
+        return tuple(f.read().splitlines())
+
 def print_clashes(clashes):
     """Print any clashing filenames that arose out of file transfer."""
     if clashes:
@@ -118,18 +118,22 @@ def print_clashes(clashes):
 def main():
     """Get the CSV file of students' names and the destination
     repository from the command line, then transfer the files.
-    Afterwards, commit and push using author data at the top
-    of this module file."""
+    Afterwards, commit and push using provided credentials."""
     parser = argparse.ArgumentParser(description="Read a file of "
             "student GitHub usernames, then transfer files in their "
             "PE repositories to a given destination repository.")
     parser.add_argument("students", help="CSV or plaintext list of students")
     parser.add_argument("destination", help="destination repository, "
             "in the form owner/name (e.g. nus-cs2103-AY1920S1/pe)")
+    parser.add_argument("credentials", help="credentials file - "
+            "four lines of author, email, username, password/access token")
     args = parser.parse_args()
     students = read_student_names(args.students)
+
+    AUTHOR, EMAIL, USERNAME, PASSWORD = read_credentials(args.credentials)
     user_pass = pygit2.UserPass(USERNAME, PASSWORD)
     key = pygit2.RemoteCallbacks(credentials=user_pass)
+
     endpoint = clone_destination(args.destination, key)
     files_path = make_files_folder(endpoint)
     print_clashes(collate_files(students, files_path))
