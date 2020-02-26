@@ -103,7 +103,7 @@ def read_student_names(file):
 
 def read_credentials(file):
     """file contains four lines: author name, email address,
-    GitHub username, password or access token. Extract these fields
+    GitHub username, access token. Extract these fields
     from said file and return a tuple of them."""
     with open(file, 'r') as f:
         return tuple(f.read().splitlines())
@@ -126,12 +126,12 @@ def main():
     parser.add_argument("destination", help="destination repository, "
             "in the form owner/name (e.g. nus-cs2103-AY1920S1/pe)")
     parser.add_argument("credentials", help="credentials file - "
-            "four lines of author, email, username, password/access token")
+            "four lines of author, email, username, access token")
     args = parser.parse_args()
     students = read_student_names(args.students)
 
-    AUTHOR, EMAIL, USERNAME, PASSWORD = read_credentials(args.credentials)
-    user_pass = pygit2.UserPass(USERNAME, PASSWORD)
+    AUTHOR, EMAIL, USERNAME, TOKEN = read_credentials(args.credentials)
+    user_pass = pygit2.UserPass(USERNAME, TOKEN)
     key = pygit2.RemoteCallbacks(credentials=user_pass)
 
     endpoint = clone_destination(args.destination, key)
