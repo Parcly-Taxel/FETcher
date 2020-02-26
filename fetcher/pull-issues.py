@@ -7,7 +7,7 @@ import requests
 BATCH_SIZE = 10
 
 issues_query = """
-query($after:String, $owner:String!, $name:String!) {
+query($after: String, $owner: String!, $name: String!) {
   repository(owner: $owner, name: $name) {
     issues(first: 100, after: $after) {
       totalCount
@@ -132,6 +132,13 @@ def create_labels(owner_name, new_labels, access_token):
     labels.update(new_pairs)
     return (labels, destination_id)
 
+def dumps_surrogates(s):
+    """Produce the JSON encoding of s, but with UTF-16 surrogate pairs
+    replaced by one UTF-8 character. This is needed to handle emoji
+    (doing just json.dumps(s) would cause GraphQL to throw an error)."""
+    return json.dumps(s, ensure_ascii=False) \
+            .encode("utf-16", "surrogatepass").decode("utf-16")
+
 def issues_block(repository_id, issues, labels):
     """Generate the mutation block that will add all given issues
     to the given repository. num is an index, which should be unique.
@@ -139,8 +146,8 @@ def issues_block(repository_id, issues, labels):
     mutations = []
     for (n, issue) in enumerate(issues):
         title, body, label_list = issue
-        title = json.dumps(title)
-        body = json.dumps(body)
+        title = dumps_surrogates(title)
+        body = dumps_surrogates(body)
         label_list = json.dumps([labels[l] for l in label_list])
         mut = (f'i{n}: createIssue(input: {{repositoryId: "{repository_id}", '
                 f'title: {title}, body: {body}, '
@@ -159,11 +166,10 @@ def create_issues(repository_id, issues, labels, access_token):
         batch = issues[i:lim]
         mutations = issues_block(repository_id, batch, labels)
         res = query_github_graphql(mutations, {}, access_token)
-        print(res)
+        out.extend(issue["issue"]["number"] for issue in res["data"].values())
         with open("remaining.json", 'w') as f:
             json.dump([issues[lim:], labels], f, indent="  ")
         print(f"{lim}/{N}")
-        out.extend(issue["issue"]["number"] for issue in res["data"].values())
     return out
 
 def read_access_token(file):
