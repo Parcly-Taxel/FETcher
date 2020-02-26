@@ -35,6 +35,8 @@ It then
 * downloads the _title_, _body_ and _labels_ of all issues in the source repository using [GitHub's GraphQL API](https://developer.github.com/v4) and saves them to `issues.json` as a backup
 * creates issues with the same data in the destination repository
 
+It takes around 35 minutes of running time to transfer the practical exam dry run issues of the CS2103/T AY1920S1 cohort.
+
 ----
 
 [Fet](https://en.wikipedia.org/wiki/Fet) is also the name of a Norwegian municipality, quite close to Akershus Fortress.
