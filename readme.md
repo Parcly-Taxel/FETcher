@@ -18,17 +18,23 @@ The script then clones the students' repositories, transfers their files to a ce
 
 An interrupted transfer process can be resumed by passing `remaining` instead of the CSV file as the first argument to `fetch.py`. The file `remaining` is automatically updated with a list of usernames still to process.
 
-The second script, `pull-issues.py`, takes from the command line
-
-* a source repository in the form `owner/name`
-* a credentials file as in `fetch.py`
-
-It then downloads the _title_, _body_ and _labels_ of all issues in the source repository using [GitHub's GraphQL API](https://developer.github.com/v4) and saves them to `issues.json`.
-
 Example times for transferring the CS2103/T AY1920S1 cohort (332 students):
 ```
 real    15m2.305s
 user    2m7.910s
 sys     0m10.769s
 ```
+
+The second script, `pull-issues.py`, takes from the command line
+
+* a source and destination repository, both in the form `owner/name`
+* a credentials file as in `fetch.py`
+
+It then
+
+* downloads the _title_, _body_ and _labels_ of all issues in the source repository using [GitHub's GraphQL API](https://developer.github.com/v4) and saves them to `issues.json` as a backup
+* creates issues with the same data in the destination repository
+
+----
+
 [Fet](https://en.wikipedia.org/wiki/Fet) is also the name of a Norwegian municipality, quite close to Akershus Fortress.
