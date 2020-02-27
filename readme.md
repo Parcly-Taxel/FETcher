@@ -32,10 +32,16 @@ The second script, `pull-issues.py`, takes from the command line
 
 It then
 
-* downloads the _title_, _body_ and _labels_ of all issues in the source repository using [GitHub's GraphQL API](https://developer.github.com/v4) and saves them to `issues.json` as a backup
-* creates issues with the same data in the destination repository
+* downloads the _title_, _body_ and _labels_ of all issues in the source repository using [the GraphQL API](https://developer.github.com/v4) and saves them to `issues.json` as a backup
+* creates issues with the same data in the destination repository using the REST API
 
-It takes around 35 minutes of running time to transfer the practical exam dry run issues of the CS2103/T AY1920S1 cohort.
+Example times for transferring the issues found in the practical exam dry run by the CS2103/T AY1920S1 cohort (3052 issues):
+```
+real    29m10.705s
+user    2m25.138s
+sys     0m8.460s
+```
+Issues continued to be created for six minutes after the program completed.
 
 ----
 
