@@ -77,7 +77,7 @@ def create_labels(owner_name, labels, token):
 
 def create_issues(owner_name, issues, token):
     """Create the given issues in the given repository (owner/name format).
-    Return the numbers of the issues thus created."""
+    Return None."""
     N = len(issues)
     for (n, issue) in enumerate(issues, 1):
         query_rest("POST", f"/repos/{owner_name}/import/issues", issue, token,
@@ -85,7 +85,7 @@ def create_issues(owner_name, issues, token):
         if n % 10 == 0:
             print(f"{n}/{N} issues imported")
         with open("remaining.json", 'w') as f:
-            json.dump(issues[n:], f, indent="  ")
+            json.dump((issues[n:], {}), f, indent="  ")
     print("all done")
 
 def read_access_token(file):
