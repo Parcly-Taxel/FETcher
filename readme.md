@@ -25,7 +25,7 @@ user    2m7.910s
 sys     0m10.769s
 ```
 
-The second script, `pull-issues.py`, takes from the command line
+The second script, `fetch-issues.py`, takes from the command line
 
 * a source and destination repository, both in the form `owner/name`
 * a credentials file as in `fetch.py`
