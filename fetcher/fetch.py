@@ -65,15 +65,16 @@ def dump_remaining_usernames(names):
         for name in names:
             print(name, file=f)
 
-def collate_files(names, endpoint):
+def collate_files(names, endpoint, processes):
     """Given a sequence of GitHub usernames of students, clone their
     PE repositories and copy files into endpoint. Return a list of
-    duplicate filenames found in the form username/filename."""
+    duplicate filenames found in the form username/filename.
+    The given number of processes will be used for cloning in parallel."""
     clashes = []
     N = len(names)
     left_names = set(names)
     with tempfile.TemporaryDirectory() as tempdir, \
-            multiprocessing.Pool() as pool:
+            multiprocessing.Pool(processes=processes) as pool:
         pairs = [(name, tempdir) for name in names]
         results = pool.imap(clone_files, pairs)
         for (n, (name, name_path)) in enumerate(results, 1):
@@ -134,16 +135,20 @@ def main():
             "in the form owner/name (e.g. nus-cs2103-AY1920S1/pe)")
     parser.add_argument("credentials", help="credentials file - "
             "four lines of author, email, username, access token")
+    parser.add_argument("-p", help="number of download processes to "
+            "run in parallel (default is number of cores on machine)",
+            type=int, default=os.cpu_count())
     args = parser.parse_args()
     students = read_student_names(args.students)
 
     AUTHOR, EMAIL, USERNAME, TOKEN = read_credentials(args.credentials)
     user_pass = pygit2.UserPass(USERNAME, TOKEN)
     key = pygit2.RemoteCallbacks(credentials=user_pass)
+    processes = 1 if args.p is None or args.p < 1 else args.p
 
     endpoint = clone_destination(args.destination, key)
     files_path = make_files_folder(endpoint)
-    print_clashes(collate_files(students, files_path))
+    print_clashes(collate_files(students, files_path, processes))
     commit_and_push(endpoint, AUTHOR, EMAIL, "Collect PE files", key)
 
 if __name__ == "__main__":
