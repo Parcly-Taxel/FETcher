@@ -14,15 +14,15 @@ muffinsmuffins
 4f17daf987b3028dd4367f8bef6ec39e929203a8
 ```
 
-The script then clones the students' repositories, transfers their files to a central folder in the destination repository called `files`, commits and pushes.
+The script then clones the students' repositories, transfers their files to a central folder in the destination repository called `files`, commits and pushes. As many threads as there are processors on the running machine are used to speed up transfer.
 
 An interrupted transfer process can be resumed by passing `remaining` instead of the CSV file as the first argument to `fetch.py`. The file `remaining` is automatically updated with a list of usernames still to process.
 
 Example times for transferring the CS2103/T AY1920S1 cohort (332 students):
 ```
-real    15m2.305s
-user    2m7.910s
-sys     0m10.769s
+real    6m10.815s
+user    1m59.742s
+sys     0m10.230s
 ```
 
 The second script, `fetch-issues.py`, takes from the command line
